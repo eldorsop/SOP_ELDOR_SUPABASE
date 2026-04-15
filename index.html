@@ -461,7 +461,7 @@
                 if (p.type === 'red' || (p.isManual && !p.isSilent)) ic++;
                 if (p.imgIdx === window.activeIdx && !p.isManual) {
                     const m = document.createElement('div');
-                    if (p.type === 'operator') { m.className = 'marker-operator'; m.innerHTML = `<i data-lucide="user" style="width:12px; height:12px;"></i> OPERATÖR TARAFİ`; } 
+                    if (p.type === 'operator') { m.className = 'marker-operator'; m.innerHTML = `<i data-lucide="user" style="width:12px; height:12px;"></i> OPERATÖR TARAFı`; } 
                     else { m.className = `marker marker-${p.type || 'red'}`; m.innerText = p.isSilent ? '' : ic; }
                     m.style.left = p.px + '%'; m.style.top = p.py + '%';
                     m.onclick = (ev) => { ev.stopPropagation(); window.points.splice(idx, 1); renderAll(); };
@@ -513,7 +513,7 @@
                         const mx = drawX + (p.px/100)*dWidth, my = drawY + (p.py/100)*dHeight;
                         if (p.type === 'operator') {
                             tctx.fillStyle='#000080'; tctx.beginPath(); tctx.roundRect(mx-60, my-12, 120, 24, 4); tctx.fill();
-                            tctx.fillStyle='white'; tctx.font='bold 10px Arial'; tctx.textAlign='center'; tctx.fillText('OPERATÖR TARAFİ', mx, my+3);
+                            tctx.fillStyle='white'; tctx.font='bold 10px Arial'; tctx.textAlign='center'; tctx.fillText('OPERATÖR TARAFı', mx, my+3);
                         } else {
                             tctx.beginPath(); tctx.arc(mx, my, 15, 0, Math.PI*2); tctx.fillStyle=getColorByType(p.type); tctx.fill();
                             if(p.type === 'red'){ tctx.fillStyle='white'; tctx.font='bold 18px Arial'; tctx.textAlign='center'; tctx.fillText(ic, mx, my+6); }
