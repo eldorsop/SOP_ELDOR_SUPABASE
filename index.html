@@ -400,15 +400,48 @@
             els.customModal.classList.remove('flex');
         };
 
-        // --- QR KOD İNDİRME MANTIĞI ---
+        // --- QR KOD İNDİRME MANTIĞI (BAŞLIKLI) ---
         els.downloadQrBtn.onclick = () => {
             const qrCanvas = els.qrContainer.querySelector('canvas');
             if (!qrCanvas) return;
 
-            const qrImage = qrCanvas.toDataURL("image/png");
+            const title = (els.sopTitleInput.value || 'SOP DÖKÜMANI').toUpperCase();
+            
+            // Yeni bir birleşik canvas oluştur
+            const canvas = document.createElement('canvas');
+            const compositeCtx = canvas.getContext('2d');
+            
+            const padding = 20;
+            const textSpace = 50;
+            
+            // Canvas boyutlarını belirle (QR genişliği + kenar payları)
+            canvas.width = qrCanvas.width + (padding * 2);
+            canvas.height = qrCanvas.height + (padding * 2) + textSpace;
+            
+            // Arka planı beyaz yap
+            compositeCtx.fillStyle = 'white';
+            compositeCtx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // QR Kodunu çiz
+            compositeCtx.drawImage(qrCanvas, padding, padding);
+            
+            // Metin stilini belirle
+            compositeCtx.fillStyle = '#000080';
+            compositeCtx.font = 'bold 16px Arial';
+            compositeCtx.textAlign = 'center';
+            
+            // Başlığı QR kodun altına yaz
+            // Çok uzun başlıklar için basit bir sınırlandırma (Opsiyonel: Satır bölme eklenebilir)
+            let displayText = title;
+            if (displayText.length > 25) displayText = displayText.substring(0, 22) + "...";
+            
+            compositeCtx.fillText(displayText, canvas.width / 2, qrCanvas.height + padding + 30);
+            
+            // İndirme işlemini tetikle
+            const qrImage = canvas.toDataURL("image/png");
             const link = document.createElement('a');
             link.href = qrImage;
-            link.download = `QR_${(els.sopTitleInput.value || 'SOP').replace(/\s+/g, '_')}.png`;
+            link.download = `QR_${title.replace(/\s+/g, '_')}.png`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
