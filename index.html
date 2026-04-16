@@ -364,16 +364,12 @@
 
         function initApp() {
             try {
-                // Supabase Başlatma
                 if (typeof supabase !== 'undefined') {
                     supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 }
-                
-                // İkonları Yükle
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
                 }
-
                 toggleLoading(false);
             } catch (err) {
                 console.error("Başlatma hatası:", err);
@@ -387,7 +383,7 @@
             els.qrSection.classList.toggle('hidden', !qr);
             if (qr) {
                 els.qrContainer.innerHTML = '';
-                new QRCode(els.qrContainer, { text: qr, width: 160, height: 160, colorDark: "#000080", useSVG: false });
+                new QRCode(els.qrContainer, { text: qr, width: 256, height: 256, colorDark: "#000080", useSVG: false });
                 els.qrLinkText.innerText = qr;
                 els.qrTitleText.innerText = (els.sopTitleInput.value || "SOP DÖKÜMANI").toUpperCase();
             }
@@ -400,10 +396,16 @@
             els.customModal.classList.remove('flex');
         };
 
-        // --- QR KOD İNDİRME MANTIĞI (BAŞLIKLI) ---
+        // --- QR KOD İNDİRME MANTIĞI (GÜNCELLENMİŞ BAŞLIKLI SÜRÜM) ---
         els.downloadQrBtn.onclick = () => {
-            const qrCanvas = els.qrContainer.querySelector('canvas');
-            if (!qrCanvas) return;
+            // QRCode.js kütüphanesi canvas veya img oluşturabilir, her ikisini de kontrol et
+            const qrCanvasSource = els.qrContainer.querySelector('canvas');
+            const qrImgSource = els.qrContainer.querySelector('img');
+            
+            if (!qrCanvasSource && !qrImgSource) {
+                console.error("QR Kaynağı bulunamadı");
+                return;
+            }
 
             const title = (els.sopTitleInput.value || 'SOP DÖKÜMANI').toUpperCase();
             
@@ -411,40 +413,52 @@
             const canvas = document.createElement('canvas');
             const compositeCtx = canvas.getContext('2d');
             
-            const padding = 20;
-            const textSpace = 50;
+            const padding = 40;
+            const textSpace = 80;
+            const qrSize = 256;
             
-            // Canvas boyutlarını belirle (QR genişliği + kenar payları)
-            canvas.width = qrCanvas.width + (padding * 2);
-            canvas.height = qrCanvas.height + (padding * 2) + textSpace;
+            canvas.width = qrSize + (padding * 2);
+            canvas.height = qrSize + (padding * 2) + textSpace;
             
             // Arka planı beyaz yap
             compositeCtx.fillStyle = 'white';
             compositeCtx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // QR Kodunu çiz
-            compositeCtx.drawImage(qrCanvas, padding, padding);
+            // QR Kodunu çiz (Canvas mı yoksa Image mi olduğuna bakarak)
+            if (qrCanvasSource) {
+                compositeCtx.drawImage(qrCanvasSource, padding, padding, qrSize, qrSize);
+            } else if (qrImgSource) {
+                compositeCtx.drawImage(qrImgSource, padding, padding, qrSize, qrSize);
+            }
             
             // Metin stilini belirle
             compositeCtx.fillStyle = '#000080';
-            compositeCtx.font = 'bold 16px Arial';
+            compositeCtx.font = 'bold 20px Inter, Arial, sans-serif';
             compositeCtx.textAlign = 'center';
+            compositeCtx.textBaseline = 'middle';
             
             // Başlığı QR kodun altına yaz
-            // Çok uzun başlıklar için basit bir sınırlandırma (Opsiyonel: Satır bölme eklenebilir)
             let displayText = title;
-            if (displayText.length > 25) displayText = displayText.substring(0, 22) + "...";
+            // Başlık çok uzunsa kes ve üç nokta ekle
+            if (displayText.length > 30) displayText = displayText.substring(0, 27) + "...";
             
-            compositeCtx.fillText(displayText, canvas.width / 2, qrCanvas.height + padding + 30);
+            const textX = canvas.width / 2;
+            const textY = qrSize + padding + (textSpace / 2);
+            
+            compositeCtx.fillText(displayText, textX, textY);
             
             // İndirme işlemini tetikle
-            const qrImage = canvas.toDataURL("image/png");
-            const link = document.createElement('a');
-            link.href = qrImage;
-            link.download = `QR_${title.replace(/\s+/g, '_')}.png`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            try {
+                const qrImage = canvas.toDataURL("image/png");
+                const link = document.createElement('a');
+                link.href = qrImage;
+                link.download = `QR_${title.replace(/\s+/g, '_')}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (err) {
+                console.error("Görsel oluşturma hatası:", err);
+            }
         };
 
         function openCropModal() {
@@ -793,7 +807,6 @@
         };
 
         els.resetBtn.onclick = () => { 
-            // Tarayıcı confirm() yerine basit bir UI onayı da yapılabilir ancak mevcut yapıyı koruyoruz
             if(confirm("Tüm veriler temizlenecek, emin misiniz?")) { 
                 window.points = []; window.images = [null, null]; window.warnings = []; window.arrows = []; 
                 renderAll(); renderWarnings(); 
