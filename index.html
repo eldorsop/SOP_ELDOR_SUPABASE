@@ -116,11 +116,11 @@
             <h3 id="modalTitle" class="text-2xl font-bold mb-3 text-slate-900">Bilgi</h3>
             <p id="modalMessage" class="text-slate-500 mb-8 leading-relaxed"></p>
             <div id="qrSection" class="hidden mb-8 p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                <div id="qrContainer" class="flex justify-center mb-1"></div>
+                <div id="qrContainer" class="flex justify-center mb-4"></div>
                 <p id="qrTitleText" class="font-bold text-[#000080] text-xs w-[160px] mx-auto text-center mb-4 uppercase tracking-tighter"></p>
                 <p class="text-[10px] text-slate-400 mb-4 break-all bg-white p-2 rounded border" id="qrLinkText"></p>
-                <button id="downloadQrBtn" class="w-full py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold flex items-center justify-center gap-2">
-                    <i data-lucide="download" class="w-4 h-4"></i> QR Kodu İndir
+                <button id="downloadQrBtn" class="w-full py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors">
+                    <i data-lucide="download" class="w-4 h-4"></i> QR Kodu İndir (PNG)
                 </button>
             </div>
             <button id="modalClose" class="w-full px-4 py-4 bg-[#000080] text-white rounded-2xl text-base font-bold shadow-lg">Kapat</button>
@@ -374,14 +374,6 @@
                     lucide.createIcons();
                 }
 
-                // URL parametresi ile login atlanabilir (Geliştirme için)
-                const urlParams = new URLSearchParams(window.location.search);
-                if (urlParams.get('dev') === 'true') {
-                    els.loginScreen.classList.add('hidden');
-                    els.mainContent.style.opacity = '1';
-                    els.mainContent.classList.remove('pointer-events-none');
-                }
-
                 toggleLoading(false);
             } catch (err) {
                 console.error("Başlatma hatası:", err);
@@ -406,6 +398,20 @@
         document.getElementById('modalClose').onclick = () => {
             els.customModal.classList.add('hidden');
             els.customModal.classList.remove('flex');
+        };
+
+        // --- QR KOD İNDİRME MANTIĞI ---
+        els.downloadQrBtn.onclick = () => {
+            const qrCanvas = els.qrContainer.querySelector('canvas');
+            if (!qrCanvas) return;
+
+            const qrImage = qrCanvas.toDataURL("image/png");
+            const link = document.createElement('a');
+            link.href = qrImage;
+            link.download = `QR_${(els.sopTitleInput.value || 'SOP').replace(/\s+/g, '_')}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         };
 
         function openCropModal() {
@@ -556,7 +562,6 @@
             
             let ic = 0;
             
-            // Ok silme butonları
             window.arrows.forEach((a, idx) => { 
                 if (a.imgIdx === window.activeIdx) { 
                     const btn = document.createElement('div'); 
@@ -569,7 +574,6 @@
                 } 
             });
 
-            // Nokta ve Tablo oluşturma
             window.points.forEach((p, idx) => {
                 if (p.type === 'red' || (p.isManual && !p.isSilent)) ic++;
                 
@@ -674,7 +678,6 @@
                 currentY += h + 35;
             }
 
-            // Talimat Listesi Başlığı
             if (currentY > threshold - 150) addNewPage();
             tctx.fillStyle = '#f1f5f9'; tctx.fillRect(margin, currentY, canvasWidth - (margin * 2), 40);
             tctx.fillStyle = '#000080'; tctx.font = 'bold 24px Arial'; tctx.textAlign = 'left';
@@ -717,7 +720,7 @@
 
         async function uploadToSupabase(blob) {
             if (!supabaseClient) {
-                showModal("Bağlantı Hatası", "Supabase servisi engellenmiş olabilir.");
+                showModal("Bağlantı Hatası", "Supabase servisi başlatılamadı.");
                 return;
             }
             toggleLoading(true, "Buluta yükleniyor...");
@@ -737,7 +740,7 @@
             } catch (err) {
                 console.error("Supabase Hatası:", err);
                 toggleLoading(false);
-                showModal("Yükleme Hatası", "Yükleme başarısız. Yetki veya bağlantı sorunu.");
+                showModal("Yükleme Hatası", "Yükleme sırasında bir hata oluştu.");
             }
         }
 
@@ -756,7 +759,14 @@
             uploadToSupabase(blob);
         };
 
-        els.resetBtn.onclick = () => { if(confirm("Tüm veriler temizlenecek, emin misiniz?")) { window.points = []; window.images = [null, null]; window.warnings = []; window.arrows = []; renderAll(); renderWarnings(); } };
+        els.resetBtn.onclick = () => { 
+            // Tarayıcı confirm() yerine basit bir UI onayı da yapılabilir ancak mevcut yapıyı koruyoruz
+            if(confirm("Tüm veriler temizlenecek, emin misiniz?")) { 
+                window.points = []; window.images = [null, null]; window.warnings = []; window.arrows = []; 
+                renderAll(); renderWarnings(); 
+            } 
+        };
+        
         els.addManualBtn.onclick = () => { window.points.push({ px: null, py: null, description: '', type: 'red', isSilent: false, imgIdx: -1, isManual: true }); renderAll(); };
         els.addWarningBtn.onclick = () => { window.warnings.push({ text: '' }); renderWarnings(); };
 
@@ -779,10 +789,8 @@
             };
         });
 
-        // Sayfa Yüklendiğinde
         window.onload = () => { 
             initApp();
-            // 2 saniye sonra her halükarda yükleme ekranını zorla kapat (takılı kalmaması için)
             setTimeout(() => toggleLoading(false), 2000);
         };
     </script>
